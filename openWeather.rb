@@ -46,7 +46,7 @@ class OpenWeatherMap
 
 
   def testCall
-    f = File.open("WhenShouldIGoFishing/TestsAndLearning/omwTest.txt")
+    f = File.open("TestsAndLearning/omwTest.txt")
     fData = f.read
     f.close
     @calledJSON = JSON.parse(fData)
@@ -59,24 +59,23 @@ class OpenWeatherMap
     return String(jstFormatted)
   end
 
-  =begin
-  At target times,
-  =end
-  def getForecastFromTime(YYMMDDhhmm)
+
+  def getForecastFromTime
 
 
     #hourly first
     @calledJSON["hourly"].each do |hourly|
+      jst = convertJST(hourly["dt"])
+      date = jst.slice(0..5)
+      time = jst.slice(6..8)
+      #if date == workingDate
 
-      date = convertJST(hourly["dt"]).slice(0..5)
-      if date == workingDate
+      #else
+      #  dateEntry.push(Integer(date))
+      #  workingDate = date
+      #end
 
-      else
-        dateEntry.push(Integer(date))
-        workingDate = date
-      end
-
-      puts date
+      puts "#{date} @ #{time}: #{Integer(hourly["temp"])}C #{hourly["weather"][0]["description"]} with windspeed of #{Integer(hourly["wind_speed"] * 3.6)} kph"
     end
   end
 
@@ -94,5 +93,5 @@ owm = OpenWeatherMap.new
 #owm.authorize
 #owm.oneCall
 owm.testCall
-owm.getHourly
+owm.getForecastFromTime
 #owm.printCalledJSON

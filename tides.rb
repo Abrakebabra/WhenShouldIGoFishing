@@ -11,6 +11,8 @@ class TideDataParser
     # [i][0] date String
     # [i][1][j][0] time String
     # [i][1][j][1] tide Integer
+    @sortedTideMagnitudes = []
+    @tideThresholds = []
   end
 
 
@@ -89,6 +91,43 @@ class TideDataParser
   end #tideMagnitudesForDay
 
 
+  def analyseAllTides
+    @sortedTideMagnitudes = []
+    # to help determine values used in tideRater
+    for targetDayIndex in 0...@dailyData.length
+      for i in 0...@dailyData[targetDayIndex][1].length
+        timeA = @dailyData[targetDayIndex][1][i][0]
+        tideA = tideA = @dailyData[targetDayIndex][1][i][1]
+        if i == ((@dailyData[targetDayIndex][1].length) - 1)
+          if @dailyData[targetDayIndex + 1].nil?
+            #raise StandardError.new "Next day data not available"
+            break
+          end
+          tideB = @dailyData[targetDayIndex + 1][1][0][1]
+        else
+          tideB = @dailyData[targetDayIndex][1][i + 1][1]
+        end #if else
+        @sortedTideMagnitudes.push((- tideA + tideB).abs)
+      end #for i in
+    end
+    @sortedTideMagnitudes.sort!
+
+    totalEntries = Float(@sortedTideMagnitudes.length)
+    bottomFivePercent = @sortedTideMagnitudes[Integer(totalEntries*0.05)]
+    lowerQuartile = @sortedTideMagnitudes[Integer(totalEntries*0.25)]
+    median = @sortedTideMagnitudes[Integer(totalEntries*0.5)]
+    upperQuartile = @sortedTideMagnitudes[Integer(totalEntries*0.75)]
+    upperFivePercent = @sortedTideMagnitudes[Integer(totalEntries*0.95)]
+    theOnePercent = @sortedTideMagnitudes[Integer(totalEntries*0.99)]
+
+    @tideThresholds = [
+      bottomFivePercent,
+      lowerQuartile, median, upperQuartile,
+      upperFivePercent, theOnePercent
+    ]
+  end
+
+
 
   def dateFormatter(dayEntry)
     monthString = String(dayEntry[0]).slice(2..3)
@@ -102,19 +141,28 @@ class TideDataParser
   end
 
 
-  def tideRater(timeHeight)
+  # return array [rating, [original array]]
+  def tideRater(movement)
+    if @tideThresholds.empty?
+      raise StandardError.new "Run analyseAllTides first"
+    end
+
+    if movement.abs < @tideThresholds[0]      # eh
+      return 0
+    elsif movement.abs < @tideThresholds[1]   # small movement
+      return 1
+    elsif movement.abs < @tideThresholds[2]   # medium small movement
+      return 2
+    elsif movement.abs < @tideThresholds[3]   # medium large movement
+      return 3
+    elsif movement.abs < @tideThresholds[4]   # large movement
+      return 4
+    elsif movement.abs < @tideThresholds[5]   # huge movement
+      return 5
+    else                                      # end times torrential flow
+      return 6
+    end
   end
-
-
-
-    #method to find best fishing days around weekends or work etc
-
-    #method to analyse how much the tides move on average between the high and lows
-    #when is a big tide, and when is a small tide
-
-    #Or tide differece to next tide and whether outgoing or incoming
-
-    #Maybe more useful information would be incoming/outgoing info only
 
 
   def prettifyPrintAll
@@ -161,3 +209,15 @@ end #TideDataParser
 　Low tide time / tide level	：	109-136 columns	　Time 4 beams (hours and minutes), tide level 3 beams (cm)
 　* If the full (low) tide is not predicted, the full (dry) tide time is set to "9999" and the tide level is set to "999".
 =end
+
+
+
+    #method to find best fishing days around weekends or work etc
+    #do this outside
+
+    #DONE method to analyse how much the tides move on average between the high and lows
+    #DONE when is a big tide, and when is a small tide
+
+    #DONE Or tide differece to next tide and whether outgoing or incoming
+
+    #Maybe more useful information would be incoming/outgoing info only
