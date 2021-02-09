@@ -27,13 +27,13 @@ Optional if have time:  If target date is not on hourly list, go straight to dai
 Grab the first and last available weather description.  If not the same, have "xx description to yy description"
 grab the first and last available wind direction.  Same thing.  More useful than average direction.
 
-daily
-from 3rd day out, just grab daily data only
 
 Sun
 grab sunrise sunset times for each day
 =end
 
+# https://jsonformatter.curiousconcept.com/
+# Lifesaver
 
 
 require 'HTTParty'
@@ -49,6 +49,7 @@ class OpenWeatherMap
     @authorization = ''
     @oneCallAddress = 'https://api.openweathermap.org/data/2.5/onecall?lat=34.340279&lon=134.043335&units=metric&appid='
     @calledJSON = {}
+    @suntimes = []
   end
 
 
@@ -77,7 +78,7 @@ class OpenWeatherMap
 
   def convertJST(unixDateTime)
     jst = Time.at(Integer(unixDateTime))
-    jstFormatted = jst.strftime("%y%m%d%H")
+    jstFormatted = jst.strftime("%y%m%d%H%M")
     return String(jstFormatted)
   end
 
@@ -164,7 +165,7 @@ class OpenWeatherMap
         weatherDescrFirstLast = [weatherDescriptions[0], weatherDescriptions[weatherDescriptions.length - 1]]
 
         return {
-          "forecastType" => "hourly",
+          "forecastSource" => "hourly",
           "windAvg" => windAvg, "windDirFirstLast" => windDirFirstLast,
           "precipitationAvg" => precipitationAvg, "humidityAvg" => humidityAvg,
           "weatherDescrFirstLast" => weatherDescrFirstLast
@@ -180,7 +181,7 @@ class OpenWeatherMap
     @calledJSON["daily"].each do |day|
         if yymmdd == convertJST(day["dt"]).slice(0...6)
           return {
-            "forecastType" => "daily",
+            "forecastSource" => "daily",
             "wind" => msToKph(day["wind_speed"]),
             "windDir" => windDegToCardinal(Integer(day["wind_deg"])),
             "precipitation" => day["pop"],
@@ -193,8 +194,6 @@ class OpenWeatherMap
     #day not found
     raise StandardError.new "Target date not found in forecast data"
   end # getDailyForecastFrom
-
-
 
 
   def getForecastTest
@@ -227,19 +226,19 @@ class OpenWeatherMap
   end
 
 
+  def getSun
+    @calledJSON["daily"].each do |day|
+      yymmdd = convertJST(day["dt"]).slice(0...6)
+      sunrise = convertJST(day["sunrise"]).slice(6...10)
+      sunset = convertJST(day["sunset"]).slice(6...10)
+      @suntimes.push([yymmdd, sunrise, sunset])
+    end
+    return @sunTimes
+  end
+
 
   def printCalledJSON
     puts @calledJSON
   end
 
-end
-
-owm = OpenWeatherMap.new
-owm.authorize
-owm.oneCall
-#owm.testCall
-#owm.getForecastTest
-#owm.printCalledJSON
-#puts owm.getForecastFromDaily("210209")
-#puts owm.getForecastFromHourly("21020915")
-puts owm.getForecastFromYYMMDDHH("21021019")
+end # class
