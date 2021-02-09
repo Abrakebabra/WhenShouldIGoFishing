@@ -1,6 +1,7 @@
 require_relative 'waterTemps.rb'
 require_relative 'tides.rb'
 require_relative 'openWeather.rb'
+
 require 'date'
 
 =begin
@@ -8,10 +9,10 @@ How to handle the data?
 Check - will there always be 8 days of entries?
 
 Make 8 days of entries and populate in data format
-[{YYMMDD, DayOfWeek, waterTemp forecast, daily forecast, sunrise/sunset, tidedata - with hourly forecast if available}]
+[{YYMMDD, DayOfWeek, waterTemp forecast, daily forecast, sunrise/sunset, tidedata - with hourly forecast if available, tidesWorthShowing - or keep it in a function}]
 -owm get daily forecast first
 -add water temp
--add all tide data to each date
+-add all tide data
 -add hourly forecast to tide data if possible
 
 From there, can filter and play with everything
@@ -19,10 +20,34 @@ From there, can filter and play with everything
  - filter out windy times/days
 
 If no good tides show up, don't have anything for the day, or a nice message
-If a tide pops up, compare forecast temp to fishdb
+If a tide pops up, compare forecast temp to fishdb -
+
+Maybe
 -----------
 Monday 8 February
+"stay home it's not worth it"
 
+----------
+Tuesday 9 February
+Water temp is 8.6C
+Go catch some .....
+Maybe a chance of .....
+
+Tides
+(02:48am tide - exclude from report)
+
+sunrise at .....
+
+10:17 with a medium flow of 224cm!
+== weather data at this time ==
+
+sunset at .....
+
+21:06 with a large flow of -154cm!
+== no hourly data for this.  Check the general weather for the day below ==
+
+
+== general daily weather ==
 =end
 
 class WhenShouldIGoFishing
