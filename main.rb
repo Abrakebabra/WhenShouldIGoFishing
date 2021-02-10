@@ -55,68 +55,107 @@ class WhenShouldIGoFishing
   def initialize
     @today = @@time.strftime("%y%m%d")
 
-    @tides = TideDataParser.new
-    @waterTemp = WaterTemperature.new
-    @openWeather = OpenWeatherMap.new
+    @tideWidgetAndData = TideDataParser.new
+    @waterTempWidget = WaterTemperature.new
+    @openWeatherWidgetAndData = OpenWeatherMap.new
+
+    @tideWidgetAndData.getData
+    @waterTempWidget.scrapeData
+    #@waterTempWidget.getTestData
+    @openWeatherWidgetAndData.authorize
+    @openWeatherWidgetAndData.oneCall
+    #@openWeatherWidgetAndData.testCall
+
+    @waterTempData = @waterTempWidget.output
+    @openWeatherWidgetAndData.getSun
+    @allData = Array.new(8) {
+      {
+        "yymmdd" => "999999",
+        "day" => "____day",
+        "waterTemp" => 99.99,
+        "dailyForecast" => {
+          "forecastSource" => "NULL",
+          "wind" => 999,
+          "windDir" => "NULL",
+          "precipitation" => 999.9,
+          "humidity" => 999,
+          "weatherDescription" => "NULL"},
+        "sunTimes" => [
+          "sunrise hhmm",
+          "sunset hhmm"],
+        "dayAllTides" => [
+          "yymmdd", [
+            ["time", "diff"]
+            ]],
+      } #hash table structure
+    } #array element content
+
+  end #@allData variable
+
+
+  def populateDataFields
+    @waterTempData.each.with_index do |wtEntry, index|
+
+      @allData[index]["yymmdd"] = wtEntry["yymmdd"]
+      @allData[index]["day"] = wtEntry["dayEn"]
+      @allData[index]["waterTemp"] = wtEntry["temp"]
+    end
+
+    @allData.each do |entry|
+      entry["dailyForecast"] = @openWeatherWidgetAndData.getForecastFromDaily(entry["yymmdd"])
+      entry["sunTimes"] = @openWeatherWidgetAndData.findSunTimes(entry["yymmdd"])
+      entry["dayAllTides"] = @tideWidgetAndData.tideMovementsForDay(entry["yymmdd"])
+      puts entry
+    end
+  end
+
+
+  def whatFishAreAround
+    # this might take a while
+  end
+
+
+  def reportDayEntry(yymmdd)
+    entry = ""
+
+
+
 
 
   end
 
-end
+end # WhenShouldIGoFishing
+
+whenShouldIGoFishing = WhenShouldIGoFishing.new
+whenShouldIGoFishing.populateDataFields
 
 
-
-time = Time.new
-today = time.strftime("%y%m%d")
-
-
-
-
-# Water Temperature Data
-waterTemp = WaterTemperature.new
-
-#waterTemp.scrapeData
-waterTemp.testData
-
-waterTemp.pickData
-waterTempForecast = waterTemp.output
-waterTemp.print
 
 #Tide from https://www.data.jma.go.jp/gmd/kaiyou/db/tide/suisan/suisan.php
-tideParser = TideDataParser.new
-tideParser.getData
-dateTest = tideParser.tideMovementsForDay(today)
-tideParser.analyseAllTides
-dateTest[1].each do |entry|
-  rating = tideParser.tideRater(entry[1])
-  if rating == 1
-    puts "Time: #{entry[0].insert(2, ':')}  Enough water is moving: #{entry[1]}"
-  elsif rating == 2
-    puts "Time: #{entry[0].insert(2, ':')}  Medium flow: #{entry[1]}"
-  elsif rating == 3
-    puts "Time: #{entry[0].insert(2, ':')}  Large flow: #{entry[1]}"
-  elsif rating == 4
-    puts "Time: #{entry[0].insert(2, ':')}  Unusually large flow: #{entry[1]}"
-  elsif rating == 5
-    puts "Time: #{entry[0].insert(2, ':')}  Huge flow: #{entry[1]}"
-  elsif rating == 6
-    puts "Time: #{entry[0].insert(2, ':')}  END TIMES TORRENTIAL FLOW: #{entry[1]}"
-  end
-end
+#tideParser = TideDataParser.new
+#tideParser.getData
+#dateTest = tideParser.tideMovementsForDay(today)
+#tideParser.analyseAllTides
+#dateTest[1].each do |entry|
+#  rating = tideParser.tideRater(entry[1])
+#  if rating == 1
+#    puts "Time: #{entry[0].insert(2, ':')}  Enough water is moving: #{entry[1]}"
+#  elsif rating == 2
+#    puts "Time: #{entry[0].insert(2, ':')}  Medium flow: #{entry[1]}"
+#  elsif rating == 3
+#    puts "Time: #{entry[0].insert(2, ':')}  Large flow: #{entry[1]}"
+#  elsif rating == 4
+#    puts "Time: #{entry[0].insert(2, ':')}  Unusually large flow: #{entry[1]}"
+#  elsif rating == 5
+#    puts "Time: #{entry[0].insert(2, ':')}  Huge flow: #{entry[1]}"
+#  elsif rating == 6
+#    puts "Time: #{entry[0].insert(2, ':')}  END TIMES TORRENTIAL FLOW: #{entry[1]}"
+#  end
+#end
 #tideParser.allTideMovements
 #tideParser.prettifyPrintAll
 
 
-owm = OpenWeatherMap.new
-#owm.authorize
-#owm.oneCall
-owm.testCall
-owm.getSun
-#owm.getForecastTest
-#owm.printCalledJSON
-#puts owm.getForecastFromDaily(today)
-#puts owm.getForecastFromHourly("21020915")
-#puts owm.getForecastFromYYMMDDHH("21021019")
 
 
 

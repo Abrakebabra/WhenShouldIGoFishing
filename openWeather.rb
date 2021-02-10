@@ -49,7 +49,7 @@ class OpenWeatherMap
     @authorization = ''
     @oneCallAddress = 'https://api.openweathermap.org/data/2.5/onecall?lat=34.340279&lon=134.043335&units=metric&appid='
     @calledJSON = {}
-    @suntimes = []
+    @sunTimes = []
   end
 
 
@@ -196,24 +196,6 @@ class OpenWeatherMap
   end # getDailyForecastFrom
 
 
-  def getForecastTest
-    #hourly first
-    @calledJSON["hourly"].each do |hourly|
-      jst = convertJST(hourly["dt"])
-      date = jst.slice(0..5)
-      time = jst.slice(6..8)
-      #if date == workingDate
-
-      #else
-      #  dateEntry.push(Integer(date))
-      #  workingDate = date
-      #end
-
-      puts "#{date} @ #{time}: #{Integer(hourly["temp"])}C #{hourly["weather"][0]["description"]} with windspeed of #{Integer(hourly["wind_speed"] * 3.6)} kph"
-    end
-  end
-
-
   def getForecastFromYYMMDDHH(yymmddhh)
     forecast = getForecastFromHourly(yymmddhh)
     if forecast.nil?
@@ -231,9 +213,21 @@ class OpenWeatherMap
       yymmdd = convertJST(day["dt"]).slice(0...6)
       sunrise = convertJST(day["sunrise"]).slice(6...10)
       sunset = convertJST(day["sunset"]).slice(6...10)
-      @suntimes.push([yymmdd, sunrise, sunset])
+      @sunTimes.push([yymmdd, sunrise, sunset])
     end
-    return @sunTimes
+  end
+
+
+  def findSunTimes(yymmdd)
+    if @sunTimes.nil?
+      raise StandardError.new "no sun data"
+    end
+    @sunTimes.each do |day|
+      if day[0] == yymmdd
+        return day[1], day[2]
+      end
+    end
+    raise StandardError.new "findSunTimes day not found"
   end
 
 

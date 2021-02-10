@@ -65,16 +65,17 @@ class WaterTemperature
       dateMonthSplit = dateRaw.strip.split('/')
       mm = dateMonthSplit[0].rjust(2, '0')
       dd = dateMonthSplit[1].rjust(2, '0')
-      date = "#{@year}#{mm}#{dd}"
+      yymmdd = "#{@year}#{mm}#{dd}"
       dayJP = entry.slice(6...7)
       dayEn = dayEnglish(dayJP)
       temp = entry.slice(9...13).delete(' ')
-      @forecastArrayHash.push({"dayJP" => dayJP, "dayEn" => dayEn, "date" => date, "temp" => temp})
+      @forecastArrayHash.push({"dayJP" => dayJP, "dayEn" => dayEn, "yymmdd" => yymmdd, "temp" => temp})
     end #eachdo
   end #parse
 
 
   def output
+    pickData
     if @forecastArrayHash.empty?
       raise StandardError.new "forecastArrayHash is empty"
     end
@@ -85,14 +86,14 @@ class WaterTemperature
   def print
     puts "Water temp forecast"
     @forecastArrayHash.each do |entry|
-      dd = entry["date"].slice(4...6)
+      dd = entry["yymmdd"].slice(4...6)
       noLeadingZeroDate = Integer(dd, 10)
       ddStringRJust = String(noLeadingZeroDate).rjust(2)
       puts "#{entry["dayEn"].ljust(10)} #{ddStringRJust} #{entry["temp"].rjust(4)} ℃"
     end #eachdo
   end #print
 
-  def testData
+  def getTestData
     f = File.open(@testAddress)
     @sourceData = f.read
     f.close
