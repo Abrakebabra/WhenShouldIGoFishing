@@ -5,7 +5,8 @@ class TideDataParser
   #https://www.data.jma.go.jp/gmd/kaiyou/db/tide/suisan/suisan.php
 
   def initialize
-    @sourceFile = 'WhenShouldIGoFishing/SavedData/Tide TA 2021.txt'
+    workingDirectory = File.dirname(__FILE__)
+    @sourceFile = "#{workingDirectory}/SavedData/Tide TA 2021.txt"
     @dailyData = []
     #[[day, [time, tide]]]
     # [i][0] date String

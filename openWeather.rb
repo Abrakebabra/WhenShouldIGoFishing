@@ -47,6 +47,7 @@ class OpenWeatherMap
 
   def initialize
     @authorization = ''
+    @workingDirectory = File.dirname(__FILE__)
     @oneCallAddress = 'https://api.openweathermap.org/data/2.5/onecall?lat=34.340279&lon=134.043335&units=metric&appid='
     @calledJSON = {}
     @sunTimes = []
@@ -54,7 +55,8 @@ class OpenWeatherMap
 
 
   def authorize
-    file = File.open('Private/OpenWeatherMap API Key.txt')
+    directory = @workingDirectory.gsub('WhenShouldIGoFishing', '')
+    file = File.open("#{directory}Private/OpenWeatherMap API Key.txt")
     @authorization = file.read
     file.close
   end

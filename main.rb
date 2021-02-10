@@ -60,6 +60,7 @@ class WhenShouldIGoFishing
     @openWeatherWidgetAndData = OpenWeatherMap.new
 
     @tideWidgetAndData.getData
+    @tideWidgetAndData.analyseAllTides
     @waterTempWidget.scrapeData
     #@waterTempWidget.getTestData
     @openWeatherWidgetAndData.authorize
@@ -99,15 +100,15 @@ class WhenShouldIGoFishing
       @allData[index]["yymmdd"] = wtEntry["yymmdd"]
       @allData[index]["day"] = wtEntry["dayEn"]
       @allData[index]["waterTemp"] = wtEntry["temp"]
-    end
+    end #each
 
     @allData.each do |entry|
       entry["dailyForecast"] = @openWeatherWidgetAndData.getForecastFromDaily(entry["yymmdd"])
       entry["sunTimes"] = @openWeatherWidgetAndData.findSunTimes(entry["yymmdd"])
       entry["dayAllTides"] = @tideWidgetAndData.tideMovementsForDay(entry["yymmdd"])
       puts entry
-    end
-  end
+    end #each
+  end #populateDataFields
 
 
   def whatFishAreAround
@@ -115,20 +116,102 @@ class WhenShouldIGoFishing
   end
 
 
-  def reportDayEntry(yymmdd)
-    entry = ""
+  def tideWindCheck(day)
+    potentialTidesNoWind = []
+
+    day["dayAllTides"][1].each do |tideEntry|
+      rating = @tideWidgetAndData.tideRater(tideEntry[1])
+      if rating > 0
+        potentialTidesNoWind.push([rating, tideEntry[0], tideEntry[1]])
+      end # if rating
+    end # each
+
+    goodTidesAndWeather = []
+
+    potentialTidesNoWind.each do |potentialTide|
+      hh = potentialTide[1].slice(0...2)
+      yymmddhh = "#{day["yymmdd"]}hh"
+      weatherAtThatTime = @openWeatherWidgetAndData.getForecastFromYYMMDDHH(yymmddhh)
+      windSpeed = 9999
+      if weatherAtThatTime["forecastSource"] == "hourly"
+        windSpeed = weatherAtThatTime["windAvg"]
+      else #daily data
+        windSpeed = weatherAtThatTime["wind"]
+      end #if
+
+      if Integer(hh, 10) > 19 #night fishing
+        if windSpeed < 16
+          goodTidesAndWeather.push([potentialTide, weatherAtThatTime])
+        end #if
+      else #day fishing
+        if windSpeed < 20
+          goodTidesAndWeather.push([potentialTide, weatherAtThatTime])
+        end #if
+      end #if
+    end#each
+
+      return goodTidesAndWeather # [[rating, time, movement], [{weather}]]
+  end
 
 
+  def reportDayEntry(day)
+
+    date = Integer(day["yymmdd"].slice(4...6), 10)
+    entry = "#{String('-').ljust(39, '-')}\n#{day["day"]} #{date}\n"
+
+    goodTidesAndWeather = tideWindCheck(day)
+
+    if goodTidesAndWeather.length < 1
+      entry += "\n\nGo do something else fun today.\n\n\n\n#{String('-').rjust(39, '-')}"
+      puts entry
+      return
+    end
+
+    entry += "Water temperature is #{day["waterTemp"]} C\n\n\nGood times to be out:\n\n"
+
+    tideReport = ""
+
+    goodTidesAndWeather.each do |tideEntry|
+      descriptor = ""
+      individualReport = "At #{tideEntry[0][1].insert(2, ':')} tide movement is "
+      rating = tideEntry[0][0]
+      movement = tideEntry[0][2]
+      if rating == 1
+        descriptor = "#{movement}.  A bit of of a trickle.\n\n"
+      elsif rating == 2
+        descriptor = "#{movement}.  A reasonable flow.\n\n"
+      elsif rating == 3
+        descriptor = "#{movement}.  A pretty good flow.\n\n"
+      elsif rating == 4
+        descriptor = "#{movement}.  A strong flow.  Your light stuff probably won't make it to the seabed.\n\n"
+      elsif rating == 5
+        descriptor = "#{movement}.  A HUGE flow!  Get your heavy lures out!  A top 5% flow for the year!\n\n"
+      elsif rating == 6
+        descriptor = "#{movement}.  END TIMES TORRENTIAL!  The top 1% flow for this whole year!!  It's gonna be like a river!!\n\n"
+      end
+
+      individualReport += descriptor
+
+      tideReport += individualReport
+    end
+    entry += tideReport
+    puts entry
+  end
 
 
-
+  def testReport
+    @allData.each do |day|
+      reportDayEntry(day)
+    end
   end
 
 end # WhenShouldIGoFishing
 
 whenShouldIGoFishing = WhenShouldIGoFishing.new
 whenShouldIGoFishing.populateDataFields
+whenShouldIGoFishing.testReport
 
+gets
 
 
 #Tide from https://www.data.jma.go.jp/gmd/kaiyou/db/tide/suisan/suisan.php

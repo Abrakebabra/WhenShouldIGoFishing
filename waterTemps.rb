@@ -12,8 +12,9 @@ class WaterTemperature
     @sourceData = ''
     @forecastArrayHash = []
     @parsedDataString = ''
-
-    f = File.open('Private/WaterTempForecast.txt')
+    workingDirectory = File.dirname(__FILE__)
+    directory = workingDirectory.gsub('WhenShouldIGoFishing', '')
+    f = File.open("#{directory}Private/WaterTempForecast.txt")
     fileData = f.read
     f.close
     fileDataJSON = JSON.parse(fileData)
