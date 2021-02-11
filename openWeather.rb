@@ -139,7 +139,7 @@ class OpenWeatherMap
   # string input
   def getForecastFromHourly(yymmddhh)
     @calledJSON["hourly"].each.with_index do |hour, index|
-      if yymmddhh == convertJST(hour["dt"]).slice(0..8)
+      if yymmddhh == convertJST(hour["dt"]).slice(0...8)
         windSpeeds = []
         windDirections = [] #first and last
         precipitation = []
@@ -169,7 +169,7 @@ class OpenWeatherMap
         return {
           "forecastSource" => "hourly",
           "windAvg" => windAvg, "windDirFirstLast" => windDirFirstLast,
-          "precipitationAvg" => precipitationAvg, "humidityAvg" => humidityAvg,
+          "precipChanceAvg" => precipitationAvg, "humidityAvg" => humidityAvg,
           "weatherDescrFirstLast" => weatherDescrFirstLast
         }
       end # if hour is found
@@ -238,3 +238,8 @@ class OpenWeatherMap
   end
 
 end # class
+
+#omw = OpenWeatherMap.new
+#omw.authorize
+#omw.oneCall
+#puts omw.getForecastFromHourly("21021115")

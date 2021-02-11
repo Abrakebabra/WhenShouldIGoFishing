@@ -106,7 +106,6 @@ class WhenShouldIGoFishing
       entry["dailyForecast"] = @openWeatherWidgetAndData.getForecastFromDaily(entry["yymmdd"])
       entry["sunTimes"] = @openWeatherWidgetAndData.findSunTimes(entry["yymmdd"])
       entry["dayAllTides"] = @tideWidgetAndData.tideMovementsForDay(entry["yymmdd"])
-      puts entry
     end #each
   end #populateDataFields
 
@@ -130,9 +129,10 @@ class WhenShouldIGoFishing
 
     potentialTidesNoWind.each do |potentialTide|
       hh = potentialTide[1].slice(0...2)
-      yymmddhh = "#{day["yymmdd"]}hh"
+      yymmddhh = "#{day["yymmdd"]}#{hh}"
       weatherAtThatTime = @openWeatherWidgetAndData.getForecastFromYYMMDDHH(yymmddhh)
       windSpeed = 9999
+
       if weatherAtThatTime["forecastSource"] == "hourly"
         windSpeed = weatherAtThatTime["windAvg"]
       else #daily data
@@ -148,8 +148,7 @@ class WhenShouldIGoFishing
           goodTidesAndWeather.push([potentialTide, weatherAtThatTime])
         end #if
       end #if
-    end#each
-
+    end #each
       return goodTidesAndWeather # [[rating, time, movement], [{weather}]]
   end
 
@@ -157,46 +156,96 @@ class WhenShouldIGoFishing
   def reportDayEntry(day)
 
     date = Integer(day["yymmdd"].slice(4...6), 10)
-    entry = "#{String('-').ljust(39, '-')}\n#{day["day"]} #{date}\n"
-
+    entry = "#{''.ljust(79, '-')}\n#{day["day"]} #{date}\n"
+    chronologicalEntry = []
     goodTidesAndWeather = tideWindCheck(day)
 
     if goodTidesAndWeather.length < 1
-      entry += "\n\nGo do something else fun today.\n\n\n\n#{String('-').rjust(39, '-')}"
+      entry += "\n\nGo do something else fun today. The day brings nothing but trouble.\n\n\n\n#{''.ljust(80, '-')}"
       puts entry
       return
     end
 
     entry += "Water temperature is #{day["waterTemp"]} C\n\n\nGood times to be out:\n\n"
+    #DAILYFORECAST SUMMARY
+    #FISHDB THING HERE
 
     tideReport = ""
 
     goodTidesAndWeather.each do |tideEntry|
-      descriptor = ""
-      individualReport = "At #{tideEntry[0][1].insert(2, ':')} tide movement is "
+
+      hhmm = tideEntry[0][1]
       rating = tideEntry[0][0]
       movement = tideEntry[0][2]
+      descriptor = ""
+      individualTideDescr = "  #{hhmm.insert(2, ':')} movement of #{movement}\n"
       if rating == 1
-        descriptor = "#{movement}.  A bit of of a trickle.\n\n"
+        descriptor = "        A bit of a trickle.\n"
       elsif rating == 2
-        descriptor = "#{movement}.  A reasonable flow.\n\n"
+        descriptor = "        A reasonable flow.\n"
       elsif rating == 3
-        descriptor = "#{movement}.  A pretty good flow.\n\n"
+        descriptor = "        A pretty good flow.\n"
       elsif rating == 4
-        descriptor = "#{movement}.  A strong flow.  Your light stuff probably won't make it to the seabed.\n\n"
+        descriptor = "        A strong flow.  Your light stuff probably won't make it to the seabed.\n"
       elsif rating == 5
-        descriptor = "#{movement}.  A HUGE flow!  Get your heavy lures out!  A top 5% flow for the year!\n\n"
+        descriptor = "        A HUGE flow!  Get your heavy lures out!  A top 5% flow for the year!\n"
       elsif rating == 6
-        descriptor = "#{movement}.  END TIMES TORRENTIAL!  The top 1% flow for this whole year!!  It's gonna be like a river!!\n\n"
+        descriptor = "        END TIMES TORRENTIAL!  The top 1% flow for this whole year!!  It's gonna be like a river!!\n"
       end
 
-      individualReport += descriptor
+      individualTideDescr += descriptor
 
-      tideReport += individualReport
-    end
+
+      tideWeatherReport = "\n"
+      if tideEntry[1]["forecastSource"] == "hourly"
+        general = tideEntry[1]["weatherDescrFirstLast"][0]
+        if tideEntry[1]["weatherDescrFirstLast"][0] != tideEntry[1]["weatherDescrFirstLast"][1]
+          general = "#{tideEntry[1]["weatherDescrFirstLast"][0]} to #{tideEntry[1]["weatherDescrFirstLast"][1].downcase}".capitalize
+        end
+        windSpeed = tideEntry[1]["windAvg"]
+        windDir = "the #{tideEntry[1]["windDirFirstLast"][0]}"
+        if tideEntry[1]["windDirFirstLast"][0] != tideEntry[1]["windDirFirstLast"][1]
+          windDir = "the #{tideEntry[1]["windDirFirstLast"][0]}, shifting to a #{tideEntry[1]["windDirFirstLast"][1]} wind"
+        end
+
+        windDescription = "and a relatively still and windless day"
+        if windSpeed > 10
+          windDescription = "#{windSpeed}kph winds from #{windDir}"
+        elsif windSpeed > 6
+          windDescription = "with a cool #{windSpeed}kph breeze"
+        elsif windSpeed > 2
+          windDescription = "with a calm breeze"
+        end
+
+
+
+
+        humidity = ""
+        if tideEntry[1]["humidityAvg"] >= 90
+          humidity = "        Humid"
+        elsif tideEntry[1]["humidityAvg"] >= 80
+          humidity = "        A bit humid"
+        elsif tideEntry[1]["humidityAvg"] >= 60
+          humidity = "        Comfortably dry"
+        else
+          humidity = "        Don't forget that lip balm!  Pretty dry"
+        end
+
+        rainChance = ""
+        if tideEntry[1]["precipChanceAvg"] > 0.3
+          rainChance = " with a #{tideEntry[1]["precipChanceAvg"] * 10}% chance of rain"
+        end
+
+        tideWeatherReport = "        #{general} #{windDescription}.\n#{humidity}#{rainChance}.\n\n"
+      end # if hourly
+
+      individualTideDescr += tideWeatherReport
+      tideReport += individualTideDescr
+      # day weather
+    end #for each good entry
     entry += tideReport
     puts entry
-  end
+  end # report day entry
 
 
   def testReport
