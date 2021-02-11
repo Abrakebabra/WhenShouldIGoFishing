@@ -1,8 +1,10 @@
 require_relative 'waterTemps.rb'
 require_relative 'tides.rb'
 require_relative 'openWeather.rb'
+require_relative 'fishDBChecker.rb'
 
 require 'date'
+require 'json'
 
 =begin
 How to handle the data?
@@ -91,6 +93,8 @@ class WhenShouldIGoFishing
       } #hash table structure
     } #array element content
 
+    @fishDB = FishDBChecker.new
+
   end #@allData variable
 
 
@@ -110,8 +114,8 @@ class WhenShouldIGoFishing
   end #populateDataFields
 
 
-  def whatFishAreAround
-    # this might take a while
+  def whatFishAreAround(waterTemp)
+
   end
 
 
@@ -153,10 +157,49 @@ class WhenShouldIGoFishing
   end
 
 
+  def windDescriptions(windSpeed, windDir)
+    windDescription = "and a relatively still and windless day"
+    if windSpeed > 10
+      windDescription = "with #{windSpeed}kph winds from #{windDir}"
+    elsif windSpeed > 6
+      windDescription = "with a cool #{windSpeed}kph breeze"
+    elsif windSpeed > 2
+      windDescription = "with a calm breeze"
+    end
+    return windDescription
+  end
+
+
+  def humidityDescriptions(humidityPercent)
+    humidity = ""
+    if humidityPercent >= 90
+      humidity = "Humid"
+    elsif humidityPercent >= 80
+      humidity = "A bit humid"
+    elsif humidityPercent >= 60
+      humidity = "Comfortably dry"
+    else
+      humidity = "Don't forget that lip balm!  Pretty dry"
+    end
+    return humidity
+  end
+
+
+  def rainDescription(rainChance)
+    if rainChance > 0.2
+      return "A slight chance of a drizzle.\n"
+    elsif rainChance > 0.3
+      return "A #{rainChance * 10}% chance of rain.\n"
+    elsif rainChance > 0.7
+      return "Bring that rain gear! #{rainChance * 10} chance.\n"
+    end
+  end
+
+
   def reportDayEntry(day)
 
     date = Integer(day["yymmdd"].slice(4...6), 10)
-    entry = "#{''.ljust(79, '-')}\n#{day["day"]} #{date}\n"
+    entry = "#{''.ljust(80, '-')}\n#{day["day"]} #{date}\n"
     chronologicalEntry = []
     goodTidesAndWeather = tideWindCheck(day)
 
@@ -166,9 +209,66 @@ class WhenShouldIGoFishing
       return
     end
 
-    entry += "Water temperature is #{day["waterTemp"]} C\n\n\nGood times to be out:\n\n"
-    #DAILYFORECAST SUMMARY
-    #FISHDB THING HERE
+    dailyWind = windDescriptions(day["dailyForecast"]["wind"], day["dailyForecast"]["windDir"])
+    dailyHumidity = humidityDescriptions(day["dailyForecast"]["humidity"])
+    dailyRain = rainDescription(day["dailyForecast"]["precipitation"])
+    dailyForecast = "Generally #{day["dailyForecast"]["weatherDescription"]} #{dailyWind}.\n#{dailyRain}#{dailyHumidity}."
+    entry += "#{dailyForecast}\nWater temperature is #{day["waterTemp"]} C\n\n"
+    allAvailableFish = @fishDB.findAvailableFish(Float(day["waterTemp"]))
+    optimalFish = ""
+    suitableFish = ""
+    chanceFish = ""
+
+    for i in 0...allAvailableFish["optimal"].length
+      if i == 0
+        optimalFish += "#{allAvailableFish["optimal"][0]}"
+        break
+      end
+
+      if i == allAvailableFish["optimal"].length - 1
+        suitableFish += ", #{allAvailableFish["optimal"][i]}"
+      elsif i == allAvailableFish["optimal"].length - 2
+        suitableFish += " and #{allAvailableFish["optimal"][i]}"
+      end
+    end
+
+    for i in 0...allAvailableFish["suitable"].length
+      if i == 0
+        suitableFish += "#{allAvailableFish["suitable"][0]}"
+        break
+      end
+
+      if i == allAvailableFish["suitable"].length - 1
+        suitableFish += ", #{allAvailableFish["suitable"][i]}"
+      elsif i == allAvailableFish["suitable"].length - 2
+        suitableFish += "and #{allAvailableFish["suitable"][i]}"
+      end
+    end
+
+    for i in 0...allAvailableFish["chance"].length
+      if i == 0
+        chanceFish += "#{allAvailableFish["chance"][0]}"
+        break
+      end
+
+      if i != allAvailableFish["chance"].length - 1
+        chanceFish += ", #{allAvailableFish["chance"][i]}"
+      elsif i == allAvailableFish["chance"].length - 2
+        chanceFish += "and #{allAvailableFish["chance"][i]}"
+      end
+    end
+
+    if !optimalFish.empty?
+      entry += "Go catch some #{optimalFish}!\n"
+    end
+    if !suitableFish.empty?
+      entry += "Maybe some #{suitableFish} in the bay.\n"
+    end
+    if !chanceFish.empty?
+      entry += "Possibly a chance of #{chanceFish} around.\n"
+    end
+
+    entry += "\n\nGood times to be out:\n\n"
 
     tideReport = ""
 
@@ -198,7 +298,7 @@ class WhenShouldIGoFishing
 
       tideWeatherReport = "\n"
       if tideEntry[1]["forecastSource"] == "hourly"
-        general = tideEntry[1]["weatherDescrFirstLast"][0]
+        general = tideEntry[1]["weatherDescrFirstLast"][0].capitalize
         if tideEntry[1]["weatherDescrFirstLast"][0] != tideEntry[1]["weatherDescrFirstLast"][1]
           general = "#{tideEntry[1]["weatherDescrFirstLast"][0]} to #{tideEntry[1]["weatherDescrFirstLast"][1].downcase}".capitalize
         end
@@ -208,35 +308,10 @@ class WhenShouldIGoFishing
           windDir = "the #{tideEntry[1]["windDirFirstLast"][0]}, shifting to a #{tideEntry[1]["windDirFirstLast"][1]} wind"
         end
 
-        windDescription = "and a relatively still and windless day"
-        if windSpeed > 10
-          windDescription = "#{windSpeed}kph winds from #{windDir}"
-        elsif windSpeed > 6
-          windDescription = "with a cool #{windSpeed}kph breeze"
-        elsif windSpeed > 2
-          windDescription = "with a calm breeze"
-        end
+        windDescription = windDescriptions(windSpeed, windDir)
+        rainChance = rainDescription(tideEntry[1]["precipChanceAvg"])
 
-
-
-
-        humidity = ""
-        if tideEntry[1]["humidityAvg"] >= 90
-          humidity = "        Humid"
-        elsif tideEntry[1]["humidityAvg"] >= 80
-          humidity = "        A bit humid"
-        elsif tideEntry[1]["humidityAvg"] >= 60
-          humidity = "        Comfortably dry"
-        else
-          humidity = "        Don't forget that lip balm!  Pretty dry"
-        end
-
-        rainChance = ""
-        if tideEntry[1]["precipChanceAvg"] > 0.3
-          rainChance = " with a #{tideEntry[1]["precipChanceAvg"] * 10}% chance of rain"
-        end
-
-        tideWeatherReport = "        #{general} #{windDescription}.\n#{humidity}#{rainChance}.\n\n"
+        tideWeatherReport = "        #{general} #{windDescription}.\n#{rainChance}\n"
       end # if hourly
 
       individualTideDescr += tideWeatherReport
