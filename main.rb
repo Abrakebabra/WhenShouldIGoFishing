@@ -139,11 +139,11 @@ class WhenShouldIGoFishing
       end #if
 
       if Integer(hh, 10) > 19 #night fishing
-        if windSpeed < 16
+        if windSpeed <= 16
           goodTidesAndWeather.push([potentialTide, weatherAtThatTime])
         end #if
       else #day fishing
-        if windSpeed < 20
+        if windSpeed <= 20
           goodTidesAndWeather.push([potentialTide, weatherAtThatTime])
         end #if
       end #if

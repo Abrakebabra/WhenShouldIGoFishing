@@ -158,7 +158,7 @@ class OpenWeatherMap
           weatherDescriptions.push(@calledJSON["hourly"][i]["weather"][0]["description"])
         end
 
-        windAvg = avgOfArray(windSpeeds)
+        windAvg = (avgOfArray(windSpeeds)).round(0)
         windDirFirstLast = [
           windDegToCardinal(Integer(windDirections[0])),
           windDegToCardinal(Integer(windDirections[windDirections.length - 1]))]
@@ -184,7 +184,7 @@ class OpenWeatherMap
         if yymmdd == convertJST(day["dt"]).slice(0...6)
           return {
             "forecastSource" => "daily",
-            "wind" => msToKph(day["wind_speed"]),
+            "wind" => (msToKph(day["wind_speed"])).round(0),
             "windDir" => windDegToCardinal(Integer(day["wind_deg"])),
             "precipitation" => day["pop"],
             "humidity" => day["humidity"],
