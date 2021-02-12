@@ -114,11 +114,6 @@ class WhenShouldIGoFishing
   end #populateDataFields
 
 
-  def whatFishAreAround(waterTemp)
-
-  end
-
-
   def tideWindCheck(day)
     potentialTidesNoWind = []
 
@@ -204,9 +199,8 @@ class WhenShouldIGoFishing
     goodTidesAndWeather = tideWindCheck(day)
 
     if goodTidesAndWeather.length < 1
-      entry += "\n\nGo do something else fun today. The day brings nothing but trouble.\n\n\n\n#{''.ljust(80, '-')}"
-      puts entry
-      return
+      entry += "\n\nGo do something else fun today. The day brings nothing but trouble.\n\n\n\n#{''.ljust(80, '-')}\n"
+      return entry
     end
 
     dailyWind = windDescriptions(day["dailyForecast"]["wind"], day["dailyForecast"]["windDir"])
@@ -222,12 +216,9 @@ class WhenShouldIGoFishing
     for i in 0...allAvailableFish["optimal"].length
       if i == 0
         optimalFish += "#{allAvailableFish["optimal"][0]}"
-        break
-      end
-
-      if i == allAvailableFish["optimal"].length - 1
+      elsif i == allAvailableFish["optimal"].length - 1
         suitableFish += ", #{allAvailableFish["optimal"][i]}"
-      elsif i == allAvailableFish["optimal"].length - 2
+      else
         suitableFish += " and #{allAvailableFish["optimal"][i]}"
       end
     end
@@ -235,26 +226,20 @@ class WhenShouldIGoFishing
     for i in 0...allAvailableFish["suitable"].length
       if i == 0
         suitableFish += "#{allAvailableFish["suitable"][0]}"
-        break
-      end
-
-      if i == allAvailableFish["suitable"].length - 1
+      elsif i == allAvailableFish["suitable"].length - 1
+        suitableFish += " and #{allAvailableFish["suitable"][i]}"
+      else
         suitableFish += ", #{allAvailableFish["suitable"][i]}"
-      elsif i == allAvailableFish["suitable"].length - 2
-        suitableFish += "and #{allAvailableFish["suitable"][i]}"
       end
     end
 
     for i in 0...allAvailableFish["chance"].length
       if i == 0
         chanceFish += "#{allAvailableFish["chance"][0]}"
-        break
-      end
-
-      if i != allAvailableFish["chance"].length - 1
+      elsif i == allAvailableFish["chance"].length - 1
+        chanceFish += " or #{allAvailableFish["chance"][i]}"
+      else
         chanceFish += ", #{allAvailableFish["chance"][i]}"
-      elsif i == allAvailableFish["chance"].length - 2
-        chanceFish += "and #{allAvailableFish["chance"][i]}"
       end
     end
 
@@ -265,30 +250,65 @@ class WhenShouldIGoFishing
       entry += "Maybe some #{suitableFish} in the bay.\n"
     end
     if !chanceFish.empty?
-      entry += "Possibly a chance of #{chanceFish} around.\n"
+      entry += "Possibly a chance of #{chanceFish} around?\n"
     end
 
     entry += "\n\nGood times to be out:\n\n"
 
     tideReport = ""
 
+    # a hacky insertion of sunrise/sunset because I forgot to plan for this
+    sunrise = ""
+    sunset = ""
+    @allData.each do |dayB|
+      if dayB["yymmdd"] == day["yymmdd"]
+        sunrise = dayB["sunTimes"][0]
+        sunset = dayB["sunTimes"][1]
+        break
+      end
+    end
+
+    #for i in 0...goodTidesAndWeather.length
+    goodTidesAndWeather.each.with_index do |tideEntry, index|
+      if Integer(sunrise, 10) < Integer(tideEntry[0][1], 10)
+        goodTidesAndWeather.insert(index, [["sunrise", sunrise]])
+        break
+      elsif index == goodTidesAndWeather.length - 1
+        goodTidesAndWeather.push([["sunrise", sunrise]])
+      end
+    end
+
+    goodTidesAndWeather.each.with_index do |tideEntry, index|
+      if Integer(sunset, 10) < Integer(tideEntry[0][1], 10)
+        goodTidesAndWeather.insert(index, [["sunset", sunset]])
+        break
+      elsif index == goodTidesAndWeather.length - 1
+        goodTidesAndWeather.push([["sunset", sunset]])
+      end
+    end
+
+
     goodTidesAndWeather.each do |tideEntry|
 
+      if tideEntry[0][0] == "sunrise" || tideEntry[0][0] == "sunset"
+        tideReport += "  #{tideEntry[0][1].insert(2, ':')} #{tideEntry[0][0]}\n\n"
+        next
+      end
       hhmm = tideEntry[0][1]
       rating = tideEntry[0][0]
       movement = tideEntry[0][2]
       descriptor = ""
       individualTideDescr = "  #{hhmm.insert(2, ':')} movement of #{movement}\n"
       if rating == 1
-        descriptor = "        A bit of a trickle.\n"
+        descriptor = "        a bit of a trickle.\n"
       elsif rating == 2
-        descriptor = "        A reasonable flow.\n"
+        descriptor = "        a reasonable flow.\n"
       elsif rating == 3
-        descriptor = "        A pretty good flow.\n"
+        descriptor = "        a pretty good flow.\n"
       elsif rating == 4
-        descriptor = "        A strong flow.  Your light stuff probably won't make it to the seabed.\n"
+        descriptor = "        a strong flow.  Your light stuff probably won't make it to the seabed.\n"
       elsif rating == 5
-        descriptor = "        A HUGE flow!  Get your heavy lures out!  A top 5% flow for the year!\n"
+        descriptor = "        a HUGE flow!  Get your heavy lures out!  A top 5% flow for the year!\n"
       elsif rating == 6
         descriptor = "        END TIMES TORRENTIAL!  The top 1% flow for this whole year!!  It's gonna be like a river!!\n"
       end
@@ -298,9 +318,9 @@ class WhenShouldIGoFishing
 
       tideWeatherReport = "\n"
       if tideEntry[1]["forecastSource"] == "hourly"
-        general = tideEntry[1]["weatherDescrFirstLast"][0].capitalize
+        general = tideEntry[1]["weatherDescrFirstLast"][0]
         if tideEntry[1]["weatherDescrFirstLast"][0] != tideEntry[1]["weatherDescrFirstLast"][1]
-          general = "#{tideEntry[1]["weatherDescrFirstLast"][0]} to #{tideEntry[1]["weatherDescrFirstLast"][1].downcase}".capitalize
+          general = "#{tideEntry[1]["weatherDescrFirstLast"][0]} to #{tideEntry[1]["weatherDescrFirstLast"][1].downcase}"
         end
         windSpeed = tideEntry[1]["windAvg"]
         windDir = "the #{tideEntry[1]["windDirFirstLast"][0]}"
@@ -318,22 +338,33 @@ class WhenShouldIGoFishing
       tideReport += individualTideDescr
       # day weather
     end #for each good entry
-    entry += tideReport
-    puts entry
+    entry += "#{tideReport}\n#{''.ljust(80, '-')}\n"
+    return entry
   end # report day entry
 
 
-  def testReport
+  def saveAndPrint
+    allEntries = ""
     @allData.each do |day|
-      reportDayEntry(day)
+      allEntries += reportDayEntry(day)
     end
-  end
 
+    dateTime = @@time.strftime("20%y %m%h %d at %H%M")
+    workingDirectory = File.dirname(__FILE__)
+
+    File.open("#{workingDirectory}/Reports/#{dateTime}.txt", "w") {
+      |f|
+      f.write(allEntries)
+      f.close
+    }
+
+    puts allEntries
+  end
 end # WhenShouldIGoFishing
 
 whenShouldIGoFishing = WhenShouldIGoFishing.new
 whenShouldIGoFishing.populateDataFields
-whenShouldIGoFishing.testReport
+whenShouldIGoFishing.saveAndPrint
 
 gets
 
