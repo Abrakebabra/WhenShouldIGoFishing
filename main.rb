@@ -207,7 +207,7 @@ class WhenShouldIGoFishing
     dailyHumidity = humidityDescriptions(day["dailyForecast"]["humidity"])
     dailyRain = rainDescription(day["dailyForecast"]["precipitation"])
     dailyForecast = "Generally #{day["dailyForecast"]["weatherDescription"]} #{dailyWind}.\n#{dailyRain}#{dailyHumidity}."
-    entry += "#{dailyForecast}\nWater temperature is #{day["waterTemp"]} C\n\n"
+    entry += "#{dailyForecast}\n\nWater temperature is #{day["waterTemp"]} C\n"
     allAvailableFish = @fishDB.findAvailableFish(Float(day["waterTemp"]))
     optimalFish = ""
     suitableFish = ""
