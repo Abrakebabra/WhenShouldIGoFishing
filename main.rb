@@ -191,6 +191,22 @@ class WhenShouldIGoFishing
   end
 
 
+  def hackySunRiseSetInsertion(tideTimeArray, sunTime)
+    sunType = "sunrise"
+    if Integer(sunTime, 10) > 1200
+      sunType = "sunset"
+    end
+
+    tideTimeArray.each.with_index do |tideEntry, index|
+      if Integer(sunTime, 10) < Integer(tideEntry[0][1], 10)
+        tideTimeArray.insert(index, [[sunType, sunTime]])
+        return
+      end
+    end
+    tideTimeArray.push([[sunType, sunTime]])
+  end
+
+
   def reportDayEntry(day)
 
     date = Integer(day["yymmdd"].slice(4...6), 10)
@@ -268,24 +284,8 @@ class WhenShouldIGoFishing
       end
     end
 
-    #for i in 0...goodTidesAndWeather.length
-    goodTidesAndWeather.each.with_index do |tideEntry, index|
-      if Integer(sunrise, 10) < Integer(tideEntry[0][1], 10)
-        goodTidesAndWeather.insert(index, [["sunrise", sunrise]])
-        break
-      elsif index == goodTidesAndWeather.length - 1
-        goodTidesAndWeather.push([["sunrise", sunrise]])
-      end
-    end
-
-    goodTidesAndWeather.each.with_index do |tideEntry, index|
-      if Integer(sunset, 10) < Integer(tideEntry[0][1], 10)
-        goodTidesAndWeather.insert(index, [["sunset", sunset]])
-        break
-      elsif index == goodTidesAndWeather.length - 1
-        goodTidesAndWeather.push([["sunset", sunset]])
-      end
-    end
+    hackySunRiseSetInsertion(goodTidesAndWeather, sunrise)
+    hackySunRiseSetInsertion(goodTidesAndWeather, sunset)
 
 
     goodTidesAndWeather.each do |tideEntry|
@@ -360,11 +360,19 @@ class WhenShouldIGoFishing
 
     puts allEntries
   end
+
+
+  def test
+    #puts testReport(@allData[1])
+    #puts @allData[0]
+  end
+
 end # WhenShouldIGoFishing
 
 whenShouldIGoFishing = WhenShouldIGoFishing.new
 whenShouldIGoFishing.populateDataFields
 whenShouldIGoFishing.saveAndPrint
+#whenShouldIGoFishing.test
 
 gets
 

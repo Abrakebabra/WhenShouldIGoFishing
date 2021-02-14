@@ -242,4 +242,4 @@ end # class
 #omw = OpenWeatherMap.new
 #omw.authorize
 #omw.oneCall
-#puts omw.getForecastFromHourly("21021115")
+#puts omw.getForecastFromYYMMDDHH("21021419")

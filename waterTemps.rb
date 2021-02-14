@@ -101,3 +101,9 @@ class WaterTemperature
   end
 
 end #class
+
+
+#wt = WaterTemperature.new
+#wt.scrapeData
+#wt.pickData
+#wt.print

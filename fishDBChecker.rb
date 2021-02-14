@@ -52,5 +52,5 @@ end #FishDBChecker
 # next, to populate and also check against actual seasons fish are in/out of the bay
 
 #a = FishDBChecker.new
-#results = a.findAvailableFish(9.6)
+#results = a.findAvailableFish(9.0)
 #puts results
